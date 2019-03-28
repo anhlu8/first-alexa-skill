@@ -1,4 +1,4 @@
-generateSpeechResponse = (speech, shouldEndSession) => {
+const generateSpeechResponse = (speech, shouldEndSession) => {
   return {
     outputSpeech: {
       type: "PlainText",
@@ -8,7 +8,7 @@ generateSpeechResponse = (speech, shouldEndSession) => {
   };
 };
 
-generateFinalOutput = (response, sessionAttributes) => {
+const generateFinalOutput = (response, sessionAttributes) => {
   return {
     version: "1.0",
     sessionAttributes,
@@ -16,9 +16,40 @@ generateFinalOutput = (response, sessionAttributes) => {
   };
 };
 
-handlePlanMyTrip = (event, response) => {};
+const handlePlanMyTrip = (event, res) => {
+  if (
+    event.request.dialogState === "STARTED" ||
+    event.request.dialogState === "IN_PROGRESS"
+  ) {
+    const response = {
+      outputSpeech: null,
+      card: null,
+      directives: [
+        {
+          type: "Dialog.Delegate" //This tells Alexa to fill up the slots
+        }
+      ],
+      reprompt: null,
+      shouldEndSession: false
+    };
+    const sessionAttributes = {};
+    const output = generateFinalOutput(response, sessionAttributes);
+    res.send(output);
+  } else if (event.request.dialogState === "COMPLETED") {
+    const fromCity = event.request.intent.slots.fromCity.value;
+    const toCity = event.request.intent.slots.toCity.value;
+    const travelDate = event.request.intent.slots.travelDate.value;
+    const endSession = true;
+    //some business to save to the db or something else
+    const speech = `Your travel iterary is from ${fromCity} to ${toCity} on ${travelDate}`;
+    const response = generateSpeechResponse(speech, endSession);
+    const sessionAttributes = {};
+    const output = generateFinalOutput(response, sessionAttributes);
+    res.send(output);
+  }
+};
 
-processLaunchRequest = (event, res) => {
+const processLaunchRequest = (event, res) => {
   //   console.log("event for processLaunchRequest on line 20", event);
   const greeting = "Welcome to plan my trip. You can say help me plan my trip";
   const endSession = false;
@@ -28,27 +59,48 @@ processLaunchRequest = (event, res) => {
   res.send(output);
 };
 
-processIntentRequest = (event, res) => {
-  console.log("event for processIntentRequest on line 30", event);
+const processStopIntent = res => {
+  const speech = "Thank you for using Plan My Trip. Good bye";
+  const endSession = true;
+  const response = generateSpeechResponse(speech, endSession);
+  const sessionAttributes = {};
+  const output = generateFinalOutput(response, sessionAttributes);
+  res.send(output);
+};
+
+const processHelpIntent = res => {
+  const speech =
+    "You can say help me plan my trip or you can say something like I wish to visit California from Philadelphia tomorrow";
+  const endSession = false;
+  const response = generateSpeechResponse(speech, endSession);
+  const sessionAttributes = {};
+  const output = generateFinalOutput(response, sessionAttributes);
+  res.send(output);
+};
+
+const processIntentRequest = (event, res) => {
   switch (event.request.intent.name) {
-    case "AMAZON.FallbackIntent":
-      break;
+    // case "AMAZON.FallbackIntent":
+    //   break;
     case "AMAZON.CancelIntent":
+      processStopIntent(res);
       break;
     case "AMAZON.HelpIntent":
+      processHelpIntent(res);
       break;
     case "AMAZON.StopIntent":
+      processStopIntent(res);
       break;
-    case "AMAZON.NavigateHomeIntent":
-      break;
+    // case "AMAZON.NavigateHomeIntent":
+    //   break;
     case "PlanMyTrip":
       handlePlanMyTrip(event, res);
       break;
   }
 };
 
-processSessionEnded = (event, res) => {
-  console.log("event for processSessionEnded on line 34", event);
+const processSessionEnded = (event, res) => {
+  console.log("***THE SESSION HAS ENDED***");
 };
 
 exports.process = (req, res) => {
