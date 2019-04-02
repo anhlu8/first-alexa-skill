@@ -21,20 +21,70 @@ const handlePlanMyTrip = (event, res) => {
     event.request.dialogState === "STARTED" ||
     event.request.dialogState === "IN_PROGRESS"
   ) {
-    const response = {
-      outputSpeech: null,
-      card: null,
-      directives: [
-        {
-          type: "Dialog.Delegate" //This tells Alexa to fill up the slots
+    const fromCityValue = event.request.intent.slots.fromCity.value;
+    if (fromCityValue && fromCityValue === "mars") {
+      const output = {
+        version: "1.0",
+        sessionAttributes: {},
+        response: {
+          outputSpeech: {
+            type: "PlainText",
+            text:
+              "This is an invalid city name. From where did you want to start your trip?"
+          },
+          shouldEndSession: false,
+          directives: [
+            {
+              type: "Dialog.ElicitSlot",
+              slotToElicit: "fromCity",
+              updatedIntent: {
+                name: "PlanMyTrip",
+                confirmationStatus: "NONE",
+                slots: {
+                  toCity: {
+                    name: "toCity",
+                    confirmationStatus: "NONE"
+                  },
+                  travelDate: {
+                    name: "travelDate",
+                    confirmationStatus: "NONE",
+                    value: "2017-04-21"
+                  },
+                  fromCity: {
+                    name: "fromCity",
+                    confirmationStatus: "NONE"
+                  },
+                  activity: {
+                    name: "activity",
+                    confirmationStatus: "NONE"
+                  },
+                  travelMode: {
+                    name: "travelMode",
+                    confirmationStatus: "NONE"
+                  }
+                }
+              }
+            }
+          ]
         }
-      ],
-      reprompt: null,
-      shouldEndSession: false
-    };
-    const sessionAttributes = {};
-    const output = generateFinalOutput(response, sessionAttributes);
-    res.send(output);
+      };
+      res.send(output);
+    } else {
+      const response = {
+        outputSpeech: null,
+        card: null,
+        directives: [
+          {
+            type: "Dialog.Delegate" //This tells Alexa to fill up the slots
+          }
+        ],
+        reprompt: null,
+        shouldEndSession: false
+      };
+      const sessionAttributes = {};
+      const output = generateFinalOutput(response, sessionAttributes);
+      res.send(output);
+    }
   } else if (event.request.dialogState === "COMPLETED") {
     const fromCity = event.request.intent.slots.fromCity.value;
     const toCity = event.request.intent.slots.toCity.value;
